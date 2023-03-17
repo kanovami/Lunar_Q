@@ -3,8 +3,8 @@
 import numpy as np
 import corner
 import scipy.constants as sc
+import csv
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
 import matplotlib as mpl
 mpl.rc('font',family='Times New Roman',size=14)
 mpl.rcParams['mathtext.fontset'] = 'custom'
@@ -61,25 +61,9 @@ def k2(mu, eta, alpha, zeta, rho_mantle, rho_core, rho_crust,
 #==========================================================
 # Probability and likelihood calculation
 #==========================================================
-# Logarithm of a prior distribution:
-# ----------------------------------
-def log_prior(theta):
-    mu, eta, alpha, zeta, rho_mantle, rho_core, r_core = theta
-    mu_cond = 20 < mu < 200
-    eta_cond = 15 < eta < 30
-    alpha_cond = 0 < alpha < 0.5
-    zeta_cond = -5 < zeta < 5
-    rhom_cond = 3 < rho_mantle < 4
-    rhoc_cond = 4 < rho_core < 7
-    Rc_cond = 0 < r_core < 450   # min 150
-    if (mu_cond and eta_cond and alpha_cond and zeta_cond and rhom_cond 
-        and rhoc_cond and Rc_cond):
-        return 0.0
-    return -np.inf
-
 # Logarithm of probability density function:
 # ------------------------------------------
-def log_likelihood(theta, xobs, sig):
+def log_probability(theta, xobs, sig):
     '''
     Logarithm of probability density function
     '''  
@@ -106,16 +90,8 @@ def log_likelihood(theta, xobs, sig):
     a  = (xmod-xobs)
     b  = np.diag(1/sig**2)
     S  = np.matmul(np.matmul(a,b), np.transpose(a))
-    return -0.5 * S, xmod
 
-# Logarithm of the full probability func. including priors:
-# ---------------------------------------------------------
-def log_probability(theta, xobs, sig):
-    lp = log_prior(theta)
-    if not np.isfinite(lp):
-        return -np.inf
-    log_lik = log_likelihood(theta, xobs, sig)
-    return lp + log_lik[0], log_lik[1], -log_lik[0]*2
+    return -0.5 * S, xmod, S
 
 #===============================
 # Observed values
@@ -163,34 +139,50 @@ burnin = 1165
 file_name = './Andrade/chain_core_REAL.dat'
 
 df = np.loadtxt(file_name)
-print(np.shape(df))
+#print(np.shape(df))
+length = len(df)
 
 #==========================
 # Find best-fitting sample
 #==========================
-best_fit = -1000
 best_vals = df[0]
 best_vals_10 = np.zeros((10, len(df[0])))
+best_fits_10 = np.full(10, -np.inf)
+best_chi2_10 = np.zeros(10)
+observables_10 = np.zeros((10, len(means)))
+chi2 = []
 
 for sample in df[burnin:,:]:
     logprob = log_probability(sample, means, sigms)
-    if best_fit<logprob[0]:       
-        best_fit = logprob[0]
-        best_chi2 = logprob[2]
-        best_vals = sample
-        observables = logprob[1]
+    chi2.append(logprob[2])
+    if min(best_fits_10)<logprob[0]: 
+        indx_min = np.argmin(best_fits_10)
+        best_fits_10[indx_min] = logprob[0]
+        best_chi2_10[indx_min] = logprob[2]
+        best_vals_10[indx_min] = sample
+        observables_10[indx_min] = logprob[1]
         
-        for i in range(9):
-            best_vals_10[i] = best_vals_10[i+1]
-        best_vals_10[9] = sample
+chi2 = np.array(chi2)
         
-print(best_fit, best_chi2)
-print(best_vals)
-#print(best_vals_10)
-print(observables)
+# print(best_vals_10)
+# print(best_fits_10)
+# print(best_chi2_10)
 
 df[:,4] *= 1000
 df[:,5] *= 1000
+
+best_vals_10[:,4] *= 1000
+best_vals_10[:,5] *= 1000
+
+indx_min = np.argmin(best_chi2_10)
+best_vals = best_vals_10[indx_min]
+
+with open('Andrade-best_fits.csv', 'w', newline='') as f:
+    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+    writer.writerow(["chi2","mu","eta","alpha","zeta",
+                     "rho_mantle","rho_core","R_core"])
+    for i in range(10):
+        writer.writerow(np.concatenate([[best_chi2_10[i]],best_vals_10[i]]))
 
 #=============================
 # Plot rheological parameters
@@ -206,8 +198,9 @@ figure = corner.corner(df[burnin::2,:4],
     title_kwargs={"fontsize": 12, "pad": 10},
     hist_kwargs={"density": True})
 
-corner.overplot_lines(figure, best_vals[:4], color='grey')
-corner.overplot_points(figure, best_vals[:4][None], marker="s", color="grey")
+corner.overplot_lines(figure, best_vals[:4], color='black', ls="dotted")
+corner.overplot_points(figure, best_vals[:4][None], marker="s", color="black")
+corner.overplot_points(figure, best_vals_10[:,:4], marker="s", fillstyle="none", markeredgecolor="black")
 
 plt.savefig('Andrade-RHEO.png', dpi=300, bbox_inches = 'tight')
 
@@ -225,8 +218,9 @@ figure = corner.corner(df[burnin::2,4:],
     title_kwargs={"fontsize": 12, "pad": 10},
     hist_kwargs={"density": True})
 
-corner.overplot_lines(figure, best_vals[4:], color='grey')
-corner.overplot_points(figure, best_vals[4:][None], marker="s", color="grey")
+corner.overplot_lines(figure, best_vals[4:], color='black', ls='dotted')
+corner.overplot_points(figure, best_vals[4:][None], marker="s", color="black")
+corner.overplot_points(figure, best_vals_10[:,4:], marker="s", fillstyle="none", markeredgecolor="black")
 
 plt.savefig('Andrade-GEO.png', dpi=300, bbox_inches = 'tight')
 
@@ -237,8 +231,20 @@ fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 ax.flatten()
 plt.tight_layout()
 
-np.random.shuffle(df[burnin::2,:])
-samples = df[burnin:burnin+100,:]
+indices = np.random.choice(length-burnin, 100)
+
+samples  = df[indices]
+chi2_100 = chi2[indices]
+
+with open('Andrade-random100.csv', 'w', newline='') as f:
+    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+    writer.writerow(["chi2","mu","eta","alpha","zeta",
+                     "rho_mantle","rho_core","R_core"])
+    for i in range(100):
+        writer.writerow(np.concatenate([[chi2_100[i]], samples[i]]))
+
+# np.random.shuffle(df[burnin:,:])
+# samples = df[burnin:burnin+100,:]
 
 # Frequency limits
 FREQ_MIN = -8
@@ -263,12 +269,12 @@ for theta in samples:
                             lw=0.2, color='lightskyblue', ls='-')
     
 for theta in best_vals_10:
-    print(theta)
+    #print(theta)
     k2s = []
     for omg in freqs:
         k_Love, h_Love, k_Love3 = k2(
             theta[0]*1e9, 10**theta[1], theta[2], 10**theta[3],
-            theta[4]*1e3, theta[5]*1e3,
+            theta[4], theta[5],
             2550, theta[6]*1e3, 40e3, omg)
         k2s.append(k_Love)
         

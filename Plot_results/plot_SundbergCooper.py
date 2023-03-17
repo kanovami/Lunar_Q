@@ -4,8 +4,8 @@ import numpy as np
 import corner
 import scipy.constants as sc
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
 import matplotlib as mpl
+import csv
 mpl.rc('font',family='Times New Roman',size=14)
 mpl.rcParams['mathtext.fontset'] = 'custom'
 mpl.rcParams['mathtext.rm'] = 'Times New Roman'
@@ -140,33 +140,52 @@ burnin = 8896
 file_name = './Sundberg-Cooper/chain_core_REAL.dat'
 
 df = np.loadtxt(file_name)
-print(np.shape(df))
+#print(np.shape(df))
+length = len(df)
 
 #==========================
 # Find best-fitting sample
 #==========================
-best_fit = -1000
 best_vals = df[0]
 best_vals_10 = np.zeros((10, len(df[0])))
+best_fits_10 = np.full(10, -np.inf)
+best_chi2_10 = np.zeros(10)
+observables_10 = np.zeros((10, len(means)))
+chi2 = []
 
 for sample in df[burnin:,:]:
     logprob = log_probability(sample, means, sigms)
-    if best_fit<logprob[0]:       
-        best_fit = logprob[0]
-        best_chi2 = logprob[2]
-        best_vals = sample
-        observables = logprob[1]
+    chi2.append(logprob[2])
+    if min(best_fits_10)<logprob[0]: 
+        indx_min = np.argmin(best_fits_10)
+        best_fits_10[indx_min] = logprob[0]
+        best_chi2_10[indx_min] = logprob[2]
+        best_vals_10[indx_min] = sample
+        observables_10[indx_min] = logprob[1]
         
-        for i in range(9):
-            best_vals_10[i] = best_vals_10[i+1]
-        best_vals_10[9] = sample
-        
-print(best_fit, best_chi2)
-print(best_vals)
-print(observables)
+chi2 = np.array(chi2)
+               
+# print(best_vals_10)
+# print(best_fits_10)
+# print(best_chi2_10)
 
 df[:,6] *= 1000
 df[:,7] *= 1000
+#df[:,5] = df[:,5]+df[:,1]-np.log10(df[:,0]*1e9) # t_rel --> tau
+
+best_vals_10[:,6] *= 1000
+best_vals_10[:,7] *= 1000
+#best_vals_10[:,5] = best_vals_10[:,5]+best_vals_10[:,1]-np.log10(best_vals_10[:,0]*1e9)
+
+indx_min = np.argmin(best_chi2_10)
+best_vals = best_vals_10[indx_min]
+
+with open('SundbergCooper-best_fits.csv', 'w', newline='') as f:
+    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+    writer.writerow(["chi2","mu","eta","alpha","zeta","Delta","trel",
+                     "rho_mantle","rho_core","R_core"])
+    for i in range(10):
+        writer.writerow(np.concatenate([[best_chi2_10[i]],best_vals_10[i]]))
 
 #=============================
 # Plot rheological parameters
@@ -174,7 +193,7 @@ df[:,7] *= 1000
 figure = corner.corner(df[burnin::2,:6],
     labels = [r"$\mu_{\rm{m}}\; \left[\rm{GPa}\right]$", 
               r"$\log\;\eta_{\rm{m}}\; \left[\rm{Pa\; s}\right]$", 
-              r"$\alpha$", r"$\log\;\zeta$", r"$\log\;\Delta$", r"$\log\;t_{\rm{rel}}$"], 
+              r"$\alpha$", r"$\log\;\zeta$", r"$\log\;\Delta$", r"$\log\;t_{\rm{rel}}$"], # r"$\log\;\tau$"]
     smooth=True,
     color='indianred',
     quantiles=[0.16, 0.5, 0.84],
@@ -182,8 +201,9 @@ figure = corner.corner(df[burnin::2,:6],
     title_kwargs={"fontsize": 12, "pad": 10},
     hist_kwargs={"density": True})
 
-corner.overplot_lines(figure, best_vals[:6], color='grey')
-corner.overplot_points(figure, best_vals[:6][None], marker="s", color="grey")
+corner.overplot_lines(figure, best_vals[:6], color="black", ls="dotted")
+corner.overplot_points(figure, best_vals[:6][None], marker="s", color="black")
+corner.overplot_points(figure, best_vals_10[:,:6], marker="s", fillstyle="none", markeredgecolor="black")
 
 plt.savefig('SundbergCooper-RHEO.png', dpi=300, bbox_inches = 'tight')
 
@@ -201,8 +221,9 @@ figure = corner.corner(df[burnin::2,6:],
     title_kwargs={"fontsize": 12, "pad": 10},
     hist_kwargs={"density": True})
 
-corner.overplot_lines(figure, best_vals[6:], color='grey')
-corner.overplot_points(figure, best_vals[6:][None], marker="s", color="grey")
+corner.overplot_lines(figure, best_vals[6:], color="black", ls="dotted")
+corner.overplot_points(figure, best_vals[6:][None], marker="s", color="black")
+corner.overplot_points(figure, best_vals_10[:,6:], marker="s", fillstyle="none", markeredgecolor="black")
 
 plt.savefig('SundbergCooper-GEO.png', dpi=300, bbox_inches = 'tight')
 
@@ -213,12 +234,27 @@ fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 ax.flatten()
 plt.tight_layout()
 
-np.random.shuffle(df[burnin::2,:])
-samples = df[burnin:burnin+100,:]
+#df[:,5] = df[:,5]-df[:,1]+np.log10(df[:,0]*1e9) # for tau --> t_rel
+#best_vals_10[:,5] = best_vals_10[:,5]-best_vals_10[:,1]+np.log10(best_vals_10[:,0]*1e9)
+
+indices = np.random.choice(length-burnin, 100)
+
+samples  = df[indices]
+chi2_100 = chi2[indices]
+
+with open('SundbergCooper-random100.csv', 'w', newline='') as f:
+    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+    writer.writerow(["chi2","mu","eta","alpha","zeta","Delta","trel",
+                     "rho_mantle","rho_core","R_core"])
+    for i in range(100):
+        writer.writerow(np.concatenate([[chi2_100[i]], samples[i]]))
+        
+#np.random.shuffle(df[burnin::2,:])
+#samples = df[burnin:burnin+100,:]
 
 # Frequency limits
 FREQ_MIN = -8
-FREQ_MAX = -4
+FREQ_MAX = 0 #-4
 
 freqs = np.logspace(FREQ_MIN, FREQ_MAX, 100)
 
@@ -239,12 +275,11 @@ for theta in samples:
                             lw=0.2, color='lightskyblue', ls='-')
     
 for theta in best_vals_10:
-    print(theta)
     k2s = []
     for omg in freqs:
         k_Love, h_Love, k_Love3 = k2(
             theta[0]*1e9, 10**theta[1], theta[2], 10**theta[3],
-            10**theta[4], 10**theta[5], theta[6]*1e3, theta[7]*1e3,
+            10**theta[4], 10**theta[5], theta[6], theta[7],
             2550, theta[8]*1e3, 40e3, omg)
         k2s.append(k_Love)
         
@@ -258,10 +293,13 @@ for theta in best_vals_10:
 ax[0].set_xlabel(r"$\log\,\chi$ [rad/s]")
 ax[0].set_ylabel(r"$\Re\;\left[\bar{k}_2\; (\,\chi)\right]$")
 ax[0].hlines(k2_month, FREQ_MIN, FREQ_MAX, color='r')
-ax[0].vlines(np.log10(omg_month), 0.022, 0.028, color='r')
-ax[0].text(-5.5, 0.0223, r'1 month', color='r')
+# ax[0].vlines(np.log10(omg_month), 0.022, 0.028, color='r')
+ax[0].vlines(np.log10(omg_month), 0.018, 0.028, color='r')
+ax[0].text(-5.5, 0.0185, r'1 month', color='r')
+#ax[0].text(-5.5, 0.0223, r'1 month', color='r')
 ax[0].set_xlim(FREQ_MIN, FREQ_MAX)
-ax[0].set_ylim(0.022, 0.028)
+#ax[0].set_ylim(0.022, 0.028)
+ax[0].set_ylim(0.018, 0.028)
 ax[0].grid(c="gray", ls="dotted")
 
 ax[1].set_xlabel(r"$\log\,\chi$ [rad/s]")

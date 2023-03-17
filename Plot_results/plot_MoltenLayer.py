@@ -3,8 +3,8 @@
 import numpy as np
 import corner
 import scipy.constants as sc
+import csv
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
 import matplotlib as mpl
 mpl.rc('font',family='Times New Roman',size=14)
 mpl.rcParams['mathtext.fontset'] = 'custom'
@@ -73,12 +73,12 @@ def log_probability(theta, xobs, sig):
                 theta[0]*1e9, 10**theta[1], theta[2], 10**theta[3],
                 theta[4]*1e3, theta[5]*1e3, 2550, theta[6]*1e3,
                 40e3, theta[7]*1e3, theta[8]*1e3,
-                10**theta[9], 10**theta[10], omg_month)
+                10**theta[9], theta[10]*1e9, omg_month)
     k_Love_a, h_Love_a, k_Love3_a = k2(
                 theta[0]*1e9, 10**theta[1], theta[2], 10**theta[3],
                 theta[4]*1e3, theta[5]*1e3, 2550, theta[6]*1e3,
                 40e3, theta[7]*1e3, theta[8]*1e3,
-                10**theta[9], 10**theta[10], omg_year)
+                10**theta[9], theta[10]*1e9, omg_year)
     
     k2mod = k_Love_m.real
     k3mod = k_Love3_m.real
@@ -138,41 +138,59 @@ sigms = np.array([sk2_month, sQ_month, sk2Q_year, sk3_month, sh2_month, sMoIF_me
 #--------------------------------
 # Read from file
 #--------------------------------
-burnin = 17140
+burnin = 26931
 
 # Define file name
-file_name = './Molten_layer/chain_core_REAL.dat'
+file_name = './Molten_layer_corrected/chain_core_REAL.dat'
 
 df = np.loadtxt(file_name)
-print(np.shape(df))
+#print(np.shape(df))
+length = len(df)
 
 #==========================
 # Find best-fitting sample
 #==========================
-best_fit = -1000
 best_vals = df[0]
 best_vals_10 = np.zeros((10, len(df[0])))
+best_fits_10 = np.full(10, -np.inf)
+best_chi2_10 = np.zeros(10)
+observables_10 = np.zeros((10, len(means)))
+chi2 = []
 
 for sample in df[burnin:,:]:
     logprob = log_probability(sample, means, sigms)
-    if best_fit<logprob[0]:       
-        best_fit = logprob[0]
-        best_chi2 = logprob[2]
-        best_vals = sample
-        observables = logprob[1]
+    chi2.append(logprob[2])
+    if min(best_fits_10)<logprob[0]: 
+        indx_min = np.argmin(best_fits_10)
+        best_fits_10[indx_min] = logprob[0]
+        best_chi2_10[indx_min] = logprob[2]
+        best_vals_10[indx_min] = sample
+        observables_10[indx_min] = logprob[1]
         
-        for i in range(9):
-            best_vals_10[i] = best_vals_10[i+1]
-        best_vals_10[9] = sample
+chi2 = np.array(chi2)
         
-print(best_fit, best_chi2)
-print(best_vals)
-#print(best_vals_10)
-print(observables)
+# print(best_vals_10)
+# print(best_fits_10)
+# print(best_chi2_10)
 
 df[:,4] *= 1000
 df[:,5] *= 1000
 df[:,7] *= 1000
+
+best_vals_10[:,4] *= 1000
+best_vals_10[:,5] *= 1000
+best_vals_10[:,7] *= 1000
+
+indx_min = np.argmin(best_chi2_10)
+best_vals = best_vals_10[indx_min]
+
+with open('Molten-best_fits.csv', 'w', newline='') as f:
+    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+    writer.writerow(["chi2","mu","eta","alpha","zeta",
+                     "rho_mantle","rho_core","R_core",
+                     "rho_layer", "R_layer", "eta_layer", "mu_layer"])
+    for i in range(10):
+        writer.writerow(np.concatenate([[best_chi2_10[i]],best_vals_10[i]]))
 
 #=============================
 # Plot rheological parameters
@@ -188,8 +206,9 @@ figure = corner.corner(df[burnin::2,:4],
     title_kwargs={"fontsize": 12, "pad": 10},
     hist_kwargs={"density": True})
 
-corner.overplot_lines(figure, best_vals[:4], color='grey')
-corner.overplot_points(figure, best_vals[:4][None], marker="s", color="grey")
+corner.overplot_lines(figure, best_vals[:4], color='black', ls="dotted")
+corner.overplot_points(figure, best_vals[:4][None], marker="s", color="black")
+corner.overplot_points(figure, best_vals_10[:,:4], marker="s", fillstyle="none", markeredgecolor="black")
 
 plt.savefig('Molten-RHEO.png', dpi=300, bbox_inches = 'tight')
 
@@ -209,8 +228,12 @@ figure = corner.corner(df[burnin::2,4:9],
     title_kwargs={"fontsize": 12, "pad": 10},
     hist_kwargs={"density": True})
 
-corner.overplot_lines(figure, best_vals[4:9], color='grey')
-corner.overplot_points(figure, best_vals[4:9][None], marker="s", color="grey")
+corner.overplot_lines(figure, best_vals[4:9], color='black', ls="dotted")
+corner.overplot_points(figure, best_vals[4:9][None], marker="s", color="black")
+corner.overplot_points(figure, best_vals_10[:,4:9], marker="s", fillstyle="none", markeredgecolor="black")
+
+#for value in best_vals_10:
+# corner.overplot_points(figure, best_vals_10[:,4:9], marker="s", color="lightgrey")
 
 plt.savefig('Molten-GEO.png', dpi=300, bbox_inches = 'tight')
 
@@ -229,46 +252,11 @@ figure = corner.corner(df[burnin::2,7:],
     title_kwargs={"fontsize": 12, "pad": 10},
     hist_kwargs={"density": True})
 
-corner.overplot_lines(figure, best_vals[7:], color='grey')
-corner.overplot_points(figure, best_vals[7:][None], marker="s", color="grey")
+corner.overplot_lines(figure, best_vals[7:], color='black', ls="dotted")
+corner.overplot_points(figure, best_vals[7:][None], marker="s", color="black")
+corner.overplot_points(figure, best_vals_10[:,7:], marker="s", fillstyle="none", markeredgecolor="black")
 
 plt.savefig('Molten-LAYER.png', dpi=300, bbox_inches = 'tight')
-
-# #================================
-# # Plot d_LVZ vs. mu_mantle
-# #================================
-# fig, ax = plt.subplots(1, 3, figsize=(15, 4))
-# ax.flatten()
-# plt.tight_layout()
-
-# df1 = df
-# df1[:,8] = df1[:,8]-df1[:,6]
-# df1[:,9] = df1[:,9] - df1[:,1]
-# df1[:,10] = df1[:,10]/df1[:,0]
-
-# corner.hist2d(df1[burnin::2,0], df1[burnin::2,8], bins=50,
-#     ax=ax[0],
-#     smooth=True,
-#     color='gray')
-# ax[0].set_xlabel(r"$\mu_{\rm{m}}\; \left[\rm{GPa}\right]$")
-# ax[0].set_ylabel(r"$D_{\rm{LVZ}}\; \left[\rm{km}\right]$")
-# ax[0].set_xlim(60, 90)
-# ax[0].set_ylim(0, 350)
-
-# ax[1].hist(df1[burnin::2,9], bins=20, density=False, fill=False, edgecolor='gray', 
-#          histtype='step', lw=1.5, ls='-')
-# ax[1].set_xlabel(r"$\log\;\eta_{\rm{LVZ}}/\eta_{\rm{m}}$")
-# ax[1].set_ylabel(r"Number of samples")
-
-# print(df1[burnin::2,10])
-# ax[2].hist(df1[burnin::2,10], bins=20, density=False, fill=False, edgecolor='gray', 
-#          histtype='step', lw=1.5, ls='-')
-# ax[2].set_xlabel(r"$\mu_{\rm{LVZ}}/\mu_{\rm{m}}$")
-# ax[2].set_ylabel(r"Number of samples")
-
-# fig.subplots_adjust(wspace=0.22)
-
-# plt.savefig('Molten-muM_Dlvz.png', dpi=300, bbox_inches = 'tight')
 
 #=============================================
 # Plot k2 and k2/Q as a function of frequency
@@ -277,12 +265,25 @@ fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 ax.flatten()
 plt.tight_layout()
 
-np.random.shuffle(df[burnin::2,:])
-samples = df[burnin:burnin+100,:]
+indices = np.random.choice(length-burnin, 100)
+
+samples  = df[indices]
+chi2_100 = chi2[indices]
+
+with open('Molten-random100.csv', 'w', newline='') as f:
+    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
+    writer.writerow(["chi2","mu","eta","alpha","zeta",
+                     "rho_mantle","rho_core","R_core",
+                     "rho_layer", "R_layer", "eta_layer", "mu_layer"])
+    for i in range(100):
+        writer.writerow(np.concatenate([[chi2_100[i]], samples[i]]))
+
+# np.random.shuffle(df[burnin:,:])
+# samples = df[burnin:burnin+100,:]
 
 # Frequency limits
 FREQ_MIN = -8
-FREQ_MAX = -4
+FREQ_MAX = 0 #-4
 
 freqs = np.logspace(FREQ_MIN, FREQ_MAX, 100)
 
@@ -293,7 +294,7 @@ for theta in samples:
             theta[0]*1e9, 10**theta[1], theta[2], 10**theta[3],
             theta[4], theta[5], 2550, theta[6]*1e3,
             40e3, theta[7], theta[8]*1e3,
-            10**theta[9], 10**theta[10], omg)
+            10**theta[9], theta[10]*1e9, omg)
         k2s.append(k_Love)
         
     k2s = np.array(k2s)
@@ -309,9 +310,9 @@ for theta in best_vals_10:
     for omg in freqs:
         k_Love, h_Love, k_Love3 = k2(
             theta[0]*1e9, 10**theta[1], theta[2], 10**theta[3],
-            theta[4]*1e3, theta[5]*1e3, 2550, theta[6]*1e3,
-            40e3, theta[7]*1e3, theta[8]*1e3,
-            10**theta[9], 10**theta[10], omg)
+            theta[4], theta[5], 2550, theta[6]*1e3,
+            40e3, theta[7], theta[8]*1e3,
+            10**theta[9], theta[10]*1e9, omg)
         k2s.append(k_Love)
         
     k2s = np.array(k2s)
@@ -324,10 +325,13 @@ for theta in best_vals_10:
 ax[0].set_xlabel(r"$\log\,\chi$ [rad/s]")
 ax[0].set_ylabel(r"$\Re\;\left[\bar{k}_2\; (\,\chi)\right]$")
 ax[0].hlines(k2_month, FREQ_MIN, FREQ_MAX, color='r')
-ax[0].vlines(np.log10(omg_month), 0.022, 0.028, color='r')
-ax[0].text(-5.5, 0.0223, r'1 month', color='r')
+# ax[0].vlines(np.log10(omg_month), 0.022, 0.028, color='r')
+ax[0].vlines(np.log10(omg_month), 0.018, 0.028, color='r')
+ax[0].text(-5.5, 0.0185, r'1 month', color='r')
+#ax[0].text(-5.5, 0.0223, r'1 month', color='r')
 ax[0].set_xlim(FREQ_MIN, FREQ_MAX)
-ax[0].set_ylim(0.022, 0.028)
+#ax[0].set_ylim(0.022, 0.028)
+ax[0].set_ylim(0.018, 0.028)
 ax[0].grid(c="gray", ls="dotted")
 
 ax[1].set_xlabel(r"$\log\,\chi$ [rad/s]")
@@ -344,4 +348,41 @@ ax[1].grid(c="gray", ls="dotted")
 
 fig.subplots_adjust(wspace=0.22)
 
-plt.savefig('./Molten-OVERVIEW.png', dpi=200, bbox_inches = 'tight')
+plt.savefig('./Molten-OVERVIEW_long.png', dpi=200, bbox_inches = 'tight')
+
+
+#================================
+# Plot d_LVZ vs. mu_mantle
+#================================
+fig, ax = plt.subplots(1, 3, figsize=(15, 4))
+ax.flatten()
+plt.tight_layout()
+
+df1 = df[:,:]
+df1[:,8] = df1[:,8]-df1[:,6]
+df1[:,9] = df1[:,9] - df1[:,1]
+df1[:,10] = df1[:,10]/df1[:,0]
+
+corner.hist2d(df1[burnin::2,0], df1[burnin::2,8], bins=50,
+    ax=ax[0],
+    smooth=True,
+    color='gray')
+ax[0].set_xlabel(r"$\mu_{\rm{m}}\; \left[\rm{GPa}\right]$")
+ax[0].set_ylabel(r"$D_{\rm{LVZ}}\; \left[\rm{km}\right]$")
+ax[0].set_xlim(60, 90)
+ax[0].set_ylim(0, 350)
+
+ax[1].hist(df1[burnin::2,9], bins=20, density=False, fill=False, edgecolor='gray', 
+          histtype='step', lw=1.5, ls='-')
+ax[1].set_xlabel(r"$\log\;\eta_{\rm{LVZ}}/\eta_{\rm{m}}$")
+ax[1].set_ylabel(r"Number of samples")
+
+print(df1[burnin::2,10])
+ax[2].hist(df1[burnin::2,10], bins=20, density=False, fill=False, edgecolor='gray', 
+          histtype='step', lw=1.5, ls='-')
+ax[2].set_xlabel(r"$\mu_{\rm{LVZ}}/\mu_{\rm{m}}$")
+ax[2].set_ylabel(r"Number of samples")
+
+fig.subplots_adjust(wspace=0.22)
+
+plt.savefig('Molten-muM_Dlvz.png', dpi=300, bbox_inches = 'tight')
