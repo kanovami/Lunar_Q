@@ -85,12 +85,12 @@ def log_likelihood(theta, xobs, sig):
                 theta[0]*1e9, 10**theta[1], theta[2], 10**theta[3],
                 theta[4]*1e3, theta[5]*1e3, 2550, theta[6]*1e3,
                 40e3, theta[7]*1e3, theta[8]*1e3,
-                10**theta[9], 10**theta[10], omg_month)
+                10**theta[9], theta[10]*1e9, omg_month)
     k_Love_a, h_Love_a, k_Love3_a = k2(
                 theta[0]*1e9, 10**theta[1], theta[2], 10**theta[3],
                 theta[4]*1e3, theta[5]*1e3, 2550, theta[6]*1e3,
                 40e3, theta[7]*1e3, theta[8]*1e3,
-                10**theta[9], 10**theta[10], omg_year)
+                10**theta[9], theta[10]*1e9, omg_year)
     
     k2mod = k_Love_m.real
     k3mod = k_Love3_m.real
