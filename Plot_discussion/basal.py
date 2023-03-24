@@ -85,7 +85,7 @@ class Moon(object):
         def __init__(self,*args, **kwargs):
 
             self.Rs = 1737e3 #radius in m
-            self.Rc = 330e3 #radius of core in m
+            self.Rc = 371.45e3 #radius of core in m
             self.k0 = 3. #thermal conductivity in m
 
             self.Ts = 250 #surface temperature in K
@@ -93,7 +93,7 @@ class Moon(object):
                         
 
             #self.Rbasal = self.Rc+70e3 #basal layer radius
-            self.Rbasal = 500e3 #basal layer radius
+            self.Rbasal = 678.98e3 #500e3 #basal layer radius
 
             self.hcrust = 160e-9 #W/m^3 heating in crust
 
@@ -337,8 +337,8 @@ ax[0].fill_between(temp, smin,smax,alpha=0.2,label=r'Tullis model',color='r',zor
 inv_results.plot_log_eta_layer(ax[0])
 
 #solidus and liquidus comparison
-ax[0].vlines(np.array([katz.solidus(moon.pressure(700e3),0)+273.15,katz.solidus(moon.pressure(330e3),0)+273.15]),ymin=etamin,ymax=etamax,color='indianred',lw=lw/2,ls='--',label='peridotite, dry solidus, Katz et al. (2003)')
-ax[0].vlines(np.array([wyatt.solidus(moon.pressure(700e3))+273.15,wyatt.solidus(moon.pressure(330e3))+273.15]),ymin=etamin,ymax=etamax,color='dodgerblue',lw=lw/2,ls='--',label='ilmenite bearing, solidus, Wyatt (1977)')
+ax[0].vlines(np.array([katz.solidus(moon.pressure(700e3),0)+273.15,katz.solidus(moon.pressure(moon.Rc),0)+273.15]),ymin=etamin,ymax=etamax,color='indianred',lw=lw/2,ls='--',label='peridotite, dry solidus, Katz et al. (2003)')
+ax[0].vlines(np.array([wyatt.solidus(moon.pressure(700e3))+273.15,wyatt.solidus(moon.pressure(moon.Rc))+273.15]),ymin=etamin,ymax=etamax,color='dodgerblue',lw=lw/2,ls='--',label='ilmenite bearing, solidus, Wyatt (1977)')
 
 
 #making the plot undersdandable and nicer
@@ -366,8 +366,8 @@ smax = np.log10(visco.tullis1991(temp,stress,press,c_min,dygert2016.par_disl,hir
 line4 = ax[1].fill_between(temp, smin,smax,alpha=0.2,label=r'Tullis model',color='r',zorder=10)
 
 #comparing to solidus and liquidus
-line5 = ax[1].vlines(np.array([katz.solidus(moon.pressure(700e3),100)+273.15,katz.solidus(moon.pressure(330e3),100)+273.15]),ymin=etamin,ymax=etamax,color='indianred',ls='--',lw=lw/2,label='peridotite, solidus, Katz et al. (2003)')
-line6 = ax[1].vlines(np.array([wyatt.solidus(moon.pressure(700e3))+273.15,wyatt.solidus(moon.pressure(330e3))+273.15]),ymin=etamin,ymax=etamax,color='dodgerblue',ls='--',lw=lw/2,label='ilmenite-bearing, solidus, Wyatt (1977)')
+line5 = ax[1].vlines(np.array([katz.solidus(moon.pressure(700e3),100)+273.15,katz.solidus(moon.pressure(moon.Rc),100)+273.15]),ymin=etamin,ymax=etamax,color='indianred',ls='--',lw=lw/2,label='peridotite, solidus, Katz et al. (2003)')
+line6 = ax[1].vlines(np.array([wyatt.solidus(moon.pressure(700e3))+273.15,wyatt.solidus(moon.pressure(moon.Rc))+273.15]),ymin=etamin,ymax=etamax,color='dodgerblue',ls='--',lw=lw/2,label='ilmenite-bearing, solidus, Wyatt (1977)')
 
 #plotting results
 inv_results.plot_log_eta_layer(ax[1])
@@ -439,7 +439,7 @@ plt.close()
 #----------------------------------------------------------------
 #plotting temperature profiles 
 print('plotting temperature profiles')
-cenrich_max=5 #maximum enrichment in radiogenic elements in lower layer, the global production always remains the same
+cenrich_max=2 #maximum enrichment in radiogenic elements in lower layer, the global production always remains the same
 nums = 200 #number of models
 
 #cm = plt.get_cmap('viridis')
@@ -511,7 +511,7 @@ ax.fill_between(moon.Rs/1000.-khan_digi_depth2, khan_digi_min2+273.15, khan_digi
 #making the graph understendable and nicer
 ax.set_xlabel(r'$r$ [km]')
 ax.set_ylabel(r'$T$ [K]')
-ax.set_xlim(left=330,right=moon.Rs/1e3)
+ax.set_xlim(left=370,right=moon.Rs/1e3)
 ax.legend(loc='lower left',fontsize=22)
 ax.tick_params(axis="x", labelsize=30)
 ax.tick_params(axis="y", labelsize=30)
