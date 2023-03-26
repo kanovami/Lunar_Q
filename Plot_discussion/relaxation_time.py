@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Written by Michaela Walterová, 2022
 
 import numpy as np
 import matplotlib as mpl
@@ -18,10 +19,10 @@ V_act = 1e-5      # in m^3/mol
 E_act = 259e3     # in J/mol
 
 Rp = 1737.151e3
-Rc = 330e3
-rhom = 3.3e3
-rhoc = 5e3
-Rd = Rp-45e3
+Rc = 441.85e3
+rhom = 3.373e3
+rhoc = 5.054e3
+Rd = Rp-40e3
 
 cmin = 0
 cmax = 20
