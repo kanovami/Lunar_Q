@@ -4,7 +4,7 @@ This repository contains the software used for the study "Is there a semi-molten
 
 ## Best_fits
 
-Overview of the ten best-fitting models for Models 1, 2, and 3, and for a reparameterised version of Model 2, where the grain size and grain-boundary viscosity are used instead of the relaxation time $\tau$.
+Overview of the ten best-fitting samples for Models 1, 2, and 3, and for a reparameterised version of Model 2, where the grain size and grain-boundary viscosity are used instead of the relaxation time $\tau$.
 
 ## MCMC
 
@@ -53,3 +53,13 @@ The tidal heating code accepts input in the form indicated by the files "rheo_sc
 9. relaxation strength $\Delta$ of the secondary peak (for the Sundberg-Cooper rheology)
 
 The last two parameters correspond to $\eta_{\rm{P}}/\eta_{\rm{S}}$ and $\delta J/J_{\rm{U}}$ from [Renaud and Henning (2018)](https://iopscience.iop.org/article/10.3847/1538-4357/aab784). The Sundberg-Cooper parameters used in our paper are defined as $\Delta=\delta J/J_{\rm{U}}$ and $t_{\rm{rel}}=\eta_{\rm{P}}\Delta/\eta_{\rm{S}}$.
+
+The input file as well as other free parameters of the tidal heating code are specified in the module "mconst.f90". To compile the code, use all files ending with ".f90" and ".for" - the latter ("nr.for", in particular) contains subroutines from [Numerical Recipes in Fortran 77](http://numerical.recipes) by Press et al. (1992). File "main.f90" is the main body of the code and includes a subroutine for the calculation of tidal heating in a unit volume averaged over one orbital period. In "peltier.f90" is a subroutine calculating complex potential tidal Love number $k_2$ at a given frequency for the prescribed interior structure. Finally, file "glpq.f90" calculates Hansen coefficients (or, specifically, Kaula's eccentricity functions; see [Kaula, 1961](https://academic.oup.com/gji/article/5/2/104/669948)) using the Von Zeipel-Andoyer method (e.g., [Cherniack, 1972](https://ui.adsabs.harvard.edu/abs/1972SAOSR.346.....C/abstract)).
+
+## Plot_results
+
+Files used for plotting Figures 5-12 from Section 5 (Application to the Moon) and similar figures in the Supporting Information, given the output "chain_core_REAL.dat" of the MCMC runs. The same files also generate the lists of ten best-fitting samples and 100 random samples for Models 1-3 and the reparameterised version of Model 2.
+
+## Random_100
+
+Overview of the 100 randomly-chosen samples for Models 1, 2, and 3, and the reparameterised version of Model 2 that are depicted in Figures 7, 9, 15-17, and S1.
