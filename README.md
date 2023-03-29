@@ -58,7 +58,7 @@ The input file as well as other free parameters of the tidal heating code are sp
 
 ## Plot_results
 
-Files used for plotting Figures 5-12 from Section 5 (Application to the Moon) and similar figures in the Supporting Information, given the output "chain_core_REAL.dat" of the MCMC runs. The same files also generate the lists of ten best-fitting samples and 100 random samples for Models 1-3 and the reparameterised version of Model 2.
+Files used for plotting Figures 5-12 from Section 5 (Application to the Moon) and similar figures in the Supporting Information, given the output "chain_core_REAL.dat" of the MCMC runs. The same files also generate the lists of ten best-fitting samples and 100 random samples for Models 1-3 and the reparameterised version of Model 2. The module "tidal_deformation", mentioned in one of the previous sections, is required.
 
 ## Random_100
 
