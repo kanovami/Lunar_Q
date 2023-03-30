@@ -36,6 +36,42 @@ Figure 13 can be reproduced with "relaxation_time.py". Figure 14 was plotted wit
 
 ### Discussion of the model with a basal layer - Subsection 6.2
 
+Figures 15-18 were plotted with the file "basal.py". Data from Garcia et al. (2019) paper using placed on https://doi.org/10.5281/zenodo.3372489 must be used.
+
+Figure 15 shear modulus comparison as a function of the radius
+- using and plotting data provided by Garcia et al. (2019) data summarizing Weber et al. (2011), Khan et al. (2014), Matsumoto et al.  (2015)
+- plotting results Walterová et al.: best-fit models, and random 100 models
+- uses basal_process_results.py for plotting best-fit models and random 100 models
+
+Figure 16, basal viscosity prediction compared to rheological properties
+- uses module basal_viscosity.py for plotting laboratory-based models for olivine and ilmenite, and their aggregates
+- rheologically based on olivine (Kohlsted et al., 1996), ilmenite (Dygert et al., 2016)
+- plotting solidi using basal_melting.py
+- solidi: peridotite (Katz et al., 2003), ilmenite (Wyatt, 1977)
+- plotting results Walterová et al.: best-fit models, and random 100 models
+- uses basal_process_results.py for plotting best-fit models and random 100 models
+
+Figure 17, Impact of melt on the viscosity and rigidity contrast
+- viscosity and shear modulus dependence on porosity from Kervazo et al. (2021), using module basal_porosity.py
+- plotting results Walterová et al.: best-fit models, and random 100 models
+- uses basal_process_results.py for plotting best-fit models and random 100 models
+
+Figure 18, temperature profiles comparison
+- solidus and liquidus of peridotite (Katz et al., 2003), in module basal_melting.py
+- solidus and liquidus of peridotite (Wyatt, 1977), in module basal_melting.py
+- digitalized parameterized Khan et al. (2014) stated at the beginning of basal.py (lines 62-78)
+- steady-state conductive profile, calculated with the matrix propagator method; in-house code, basal_temp.py
+    # inicialization of the body, 
+    import basal_temp as temp
+    mode_temp = temp.Module_conduction_steady(array_of_radii,array_conductivity,array_heating,surface_boundary_condition_value,bottom_boundary_condition_value)
+    # array of radii indexed from the bottom boundary to the top boundary, nlayer + 1 values, indexed from bottom to top
+    # k,h conductivity and volumetric heating h for each individual layer, indexed from the bottom boundary to the top boundary, nlayer values    
+    # key arguments mode_bot='flux' if heat flux (W/m^2) at the bottom boundary is prescribed, otherwise temperature (in K) is the BC
+    # key arguments mode_top='flux' if heat flux (W/m^2) at the top boundary is prescribed, otherwise temperature (in K) is the BC
+    mode_temp.solve() #finding solution
+
+
+
 ### Discussion of other sources of information - Subsection 6.3
 
 Figure 19 was plotted with the file "heating.py", which requires the output from the tidal heating code. The code can be found in the folder "Tidal_heating" and comes in two versions: "Surface_heat_flux" and "Volumetric_heating". Both versions are written in *Fortran 90* and necessitate a Fortran compiler.

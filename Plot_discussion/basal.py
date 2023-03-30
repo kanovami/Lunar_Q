@@ -17,7 +17,17 @@ import basal_process_results as process_results
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import ticker
-   
+
+#fonts
+if False: #can be set true if there are any problems with fonts importing
+    from matplotlib import font_manager
+
+    font_dirs = ['/usr/share/fonts/truetype']
+    font_files = font_manager.findSystemFonts(fontpaths=font_dirs)
+    # mpl.font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
+    for font_file in font_files:
+        if (not("Emoji" in font_file)): font_manager.fontManager.addfont(font_file)
+    
 
 #plot settings
 mpl.rc('font',family='Times New Roman',size=24)
