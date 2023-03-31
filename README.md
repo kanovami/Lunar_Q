@@ -61,6 +61,8 @@ Figure 18, temperature profiles comparison
 - solidus and liquidus of peridotite (Wyatt, 1977), in module basal_melting.py
 - digitalized parameterized Khan et al. (2014) stated at the beginning of basal.py (lines 62-78)
 - steady-state conductive profile, calculated with the matrix propagator method; in-house code, basal_temp.py
+
+```
     # inicialization of the body, 
     import basal_temp as temp
     mode_temp = temp.Module_conduction_steady(array_of_radii,array_conductivity,array_heating,surface_boundary_condition_value,bottom_boundary_condition_value)
@@ -69,7 +71,7 @@ Figure 18, temperature profiles comparison
     # key arguments mode_bot='flux' if heat flux (W/m^2) at the bottom boundary is prescribed, otherwise temperature (in K) is the BC
     # key arguments mode_top='flux' if heat flux (W/m^2) at the top boundary is prescribed, otherwise temperature (in K) is the BC
     mode_temp.solve() #finding solution
-
+```
 
 
 ### Discussion of other sources of information - Subsection 6.3
