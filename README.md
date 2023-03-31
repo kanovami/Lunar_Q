@@ -2,6 +2,8 @@
 
 This repository contains the software used for the study "Is there a semi-molten layer at the base of the lunar mantle?" by Michaela Walterová, Marie Běhounková, and Michael Efroimsky. Below are the specifications of each directory, additional references, and brief tutorials.
 
+[![DOI](https://zenodo.org/badge/557498850.svg)](https://zenodo.org/badge/latestdoi/557498850)
+
 ## Best_fits
 
 Overview of the ten best-fitting samples for Models 1, 2, and 3, and for a reparameterised version of Model 2, where the grain size and grain-boundary viscosity are used instead of the relaxation time $\tau$.
